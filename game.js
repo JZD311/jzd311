@@ -24,6 +24,10 @@ function resizeCanvas() {
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
   canvas.style.top = `${(window.innerHeight - height) / 2}px`;
+// Позиционируем кнопки под canvas
+  const canvasBottom = ((window.innerHeight - height) / 2) + height;
+  document.getElementById('leftButton').style.bottom = `${window.innerHeight - canvasBottom + 10}px`;
+  document.getElementById('rightButton').style.bottom = `${window.innerHeight - canvasBottom + 10}px`;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
