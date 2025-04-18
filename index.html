@@ -83,7 +83,7 @@
     }
     .control-button {
       position: absolute;
-      bottom: 20px;
+      bottom: 10px; /* Уменьшено, чтобы быть под canvas */
       width: 45%;
       height: 80px;
       z-index: 30;
@@ -92,19 +92,19 @@
       background-size: contain;
       background-repeat: no-repeat;
       background-position: center;
-      background-color: #ff6f61; /* Оранжевый фон, как на скриншоте */
+      background-color: #ff6f61;
       border-radius: 20px;
     }
     .control-button:active {
-      opacity: 0.8; /* Эффект нажатия */
+      opacity: 0.8;
     }
     #leftButton {
       left: 0;
-      background-image: url('leftButton.png');
+      background-image: url('leftArrow.png');
     }
     #rightButton {
       right: 0;
-      background-image: url('rightButton.png');
+      background-image: url('rightArrow.png');
     }
   </style>
 </head>
