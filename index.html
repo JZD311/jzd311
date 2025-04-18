@@ -2,7 +2,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Beer Blaster</title>
-  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo="> <!-- Пустая иконка -->
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
   <style>
     * {
       -webkit-user-select: none;
@@ -88,23 +88,23 @@
       height: 80px;
       z-index: 30;
       touch-action: manipulation;
-      transition: background 0.1s ease;
-      color: white;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #ff6f61;
+      transition: opacity 0.1s ease;
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-color: #ff6f61; /* Оранжевый фон, как на скриншоте */
       border-radius: 20px;
     }
     .control-button:active {
-      background: #e55a50;
+      opacity: 0.8; /* Эффект нажатия */
     }
     #leftButton {
       left: 0;
+      background-image: url('leftButton.png');
     }
     #rightButton {
       right: 0;
+      background-image: url('rightBetton.png');
     }
   </style>
 </head>
@@ -123,8 +123,8 @@
 
   <canvas id="game"></canvas>
 
-  <div id="leftButton" class="control-button">Влево</div>
-  <div id="rightButton" class="control-button">Вправо</div>
+  <div id="leftButton" class="control-button"></div>
+  <div id="rightButton" class="control-button"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="game.js"></script>
