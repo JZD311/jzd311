@@ -2,7 +2,7 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
-1
+
 // Адаптация размера канваса и позиционирование кнопок
 function resizeCanvas() {
   const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
