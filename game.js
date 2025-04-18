@@ -11,8 +11,10 @@ function resizeCanvas() {
   const screenAspectRatio = width / height;
 
   if (screenAspectRatio > aspectRatio) {
+    // Экран шире, чем игра: ограничиваем по высоте
     width = height * aspectRatio;
   } else {
+    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
@@ -21,10 +23,11 @@ function resizeCanvas() {
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `0px`;
+  canvas.style.top = `0px`; // Прижимаем к верху, убираем чёрную полосу
 
-  const canvasBottom = height;
-  const buttonOffset = 10;
+  // Позиционируем кнопки под canvas
+  const canvasBottom = height; // Нижняя граница canvas в пикселях экрана
+  const buttonOffset = 10; // Отступ под canvas в пикселях
   document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
   document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
 }
@@ -59,15 +62,14 @@ const enemies = [];
 let enemySpawnTimer = 0;
 
 // Настройки игры
-const playerSpeed = 240; // Скорость в пикселях/сек (было 4 пикселя/кадр)
-const bulletSpeed = 420; // Пикселей/сек (было 7 пикселей/кадр)
-const enemySpawnInterval = 1.8; // Секунды (было 30 кадров)
-const enemySpeedRange = [60, 120]; // Пикселей/сек (было [1, 2] пикселя/кадр)
+const playerSpeed = 4;
+const bulletSpeed = 7;
+const enemySpawnInterval = 30;
+const enemySpeedRange = [1, 2];
 const bossAppearScore = 1500;
 const bossHP = 5;
-const autoFireInterval = 400; // Миллисекунды, не меняем, так как setInterval работает в реальном времени
+const autoFireInterval = 400;
 const maxMissedEnemies = 5;
-const bgSpeed = 60; // Скорость фона в пикселях/сек (было 1 пиксель/кадр)
 
 const playerImg = new Image();
 playerImg.src = 'player.png';
@@ -159,23 +161,23 @@ async function loadLeaderboard() {
   leaderboard.innerHTML = data.map((entry, i) => `${i + 1}) ${entry.nickname}: ${entry.score}`).join('<br>');
 }
 
-function update(dt) { // Добавляем параметр dt (время в секундах)
+function update() {
   // Фон
-  bgY += bgSpeed * dt; // Масштабируем скорость фона
+  bgY += 1;
   if (bgY >= GAME_HEIGHT) bgY = 0;
   if (!gameStarted || gameOver) return;
 
   // Игрок
-  if (direction === 'left') player.x -= player.speed * dt;
-  if (direction === 'right') player.x += player.speed * dt;
+  if (direction === 'left') player.x -= player.speed;
+  if (direction === 'right') player.x += player.speed;
   player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
 
   // Пули
   player.bullets = player.bullets.filter(b => b.y > 0);
-  player.bullets.forEach(b => b.y -= b.speed * dt);
+  player.bullets.forEach(b => b.y -= b.speed);
 
   // Спавн врагов
-  enemySpawnTimer += dt; // Увеличиваем таймер на dt (в секундах)
+  enemySpawnTimer++;
   if (enemySpawnTimer > enemySpawnInterval) {
     enemies.push({
       x: Math.random() * (GAME_WIDTH - 40),
@@ -189,7 +191,7 @@ function update(dt) { // Добавляем параметр dt (время в �
 
   // Движение врагов
   enemies.forEach((e, ei) => {
-    e.y += e.speed * dt; // Масштабируем скорость врагов
+    e.y += e.speed;
     if (e.y > GAME_HEIGHT) {
       enemies.splice(ei, 1);
       missedEnemies++;
@@ -222,7 +224,7 @@ function update(dt) { // Добавляем параметр dt (время в �
       y: -128,
       width: 128,
       height: 128,
-      speed: 60, // Пикселей/сек (было 1 пиксель/кадр)
+      speed: 1,
       hp: bossHP
     };
     bossSpawned = true;
@@ -230,7 +232,7 @@ function update(dt) { // Добавляем параметр dt (время в �
   }
 
   if (boss) {
-    boss.y += boss.speed * dt; // Масштабируем скорость босса
+    boss.y += boss.speed;
     player.bullets = player.bullets.filter((bullet) => {
       if (!boss) return true;
       if (
@@ -264,12 +266,8 @@ function draw() {
   if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
 }
 
-let lastTime = 0;
-function loop(timestamp) {
-  const dt = (timestamp - lastTime) / 1000; // Время в секундах
-  lastTime = timestamp;
-
-  update(dt); // Передаём dt в update
+function loop() {
+  update();
   draw();
   if (!gameOver) {
     requestAnimationFrame(loop);
