@@ -2,54 +2,37 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
+const BUTTON_HEIGHT = 100; // Высота, зарезервированная для кнопок (включая отступы)
 
-// Адаптация размера канваса и позиционирование кнопок
+// Адаптация размера канваса
 function resizeCanvas() {
   const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
   let width = window.innerWidth;
-  let height = window.innerHeight;
-
-  // Используем visualViewport, если доступно (для мобильных устройств)
-  if (window.visualViewport) {
-    height = window.visualViewport.height;
-    width = window.visualViewport.width;
-  }
-
-  // Учитываем высоту кнопок (80px) и отступ 1px
-  const buttonHeight = 80; // Высота кнопок из CSS
-  const canvasOffset = 1; // Отступ в 1 пиксель
-
-  // Рассчитываем доступную высоту с учётом кнопок и отступа
-  let availableHeight = height - buttonHeight - canvasOffset;
-
-  // Проверяем, чтобы availableHeight не был меньше минимального значения
-  const minHeight = GAME_HEIGHT / 2; // Минимальная высота канваса
-  availableHeight = Math.max(availableHeight, minHeight);
-
-  const screenAspectRatio = width / availableHeight;
+  let height = window.innerHeight - BUTTON_HEIGHT; // Оставляем место для кнопок
+  const screenAspectRatio = width / height;
 
   if (screenAspectRatio > aspectRatio) {
-    // Экран шире, чем игра: ограничиваем по высоте
-    width = availableHeight * aspectRatio;
-    height = availableHeight;
+    width = height * aspectRatio;
   } else {
-    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
-  // Устанавливаем размеры канваса
   canvas.width = GAME_WIDTH;
   canvas.height = GAME_HEIGHT;
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `0px`; // Прижимаем к верху
+  canvas.style.top = `0px`;
 
-  // Для отладки: выводим значения
-  console.log('window.innerHeight:', window.innerHeight, 'visualViewport.height:', window.visualViewport?.height, 'availableHeight:', availableHeight, 'canvas width:', width, 'canvas height:', height);
+  // Позиционирование кнопок внизу
+  const buttonOffset = 10;
+  document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
+  document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
 }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
-// Supabase
+// Остальной код остается без изменений
 const supabaseUrl = 'https://poqlvcnqbvcnyqlvxekm.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcWx2Y25xYnZjbnlxbHZ4ZWttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3ODkwMDYsImV4cCI6MjA2MDM2NTAwNn0.pBPMAQia8jzNT-e-dAT0hJ_t_QrHZUdSMU6JDdcA1JE';
 const client = supabase.createClient(supabaseUrl, supabaseKey);
@@ -285,11 +268,10 @@ let lastUpdateTime = 0;
 const targetFrameTime = 1000 / 60; // 16.67 мс для 60 FPS
 
 function loop(timestamp) {
-  // Проверяем, прошло ли достаточно времени для нового кадра
   if (timestamp - lastUpdateTime >= targetFrameTime) {
     update();
     draw();
-    lastUpdateTime = timestamp - (timestamp - lastUpdateTime) % targetFrameTime; // Выравниваем время
+    lastUpdateTime = timestamp - (timestamp - lastUpdateTime) % targetFrameTime;
   }
 
   if (!gameOver) {
