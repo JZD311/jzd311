@@ -3,12 +3,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Beer Blaster</title>
   <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
-  <!-- Отключаем кэширование -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <!-- Отладка Telegram WebView -->
-  <meta name="telegram:cache-control" content="no-cache" />
   <style>
     * {
       -webkit-user-select: none;
@@ -89,7 +83,7 @@
     }
     .control-button {
       position: absolute;
-      bottom: 10px;
+      bottom: 10px; /* Уменьшено, чтобы быть под canvas */
       width: 45%;
       height: 80px;
       z-index: 30;
@@ -114,3 +108,25 @@
     }
   </style>
 </head>
+<body>
+  <div id="score">Счёт: 0 | Пропущено: 0 / 5</div>
+
+  <div id="startScreen">
+    <h1>🍺 Ачер vs Хадыжи</h1>
+    <p id="startText">Очисти посёлок от бутылок и победи Тимура!</p>
+    <button onclick="startGame()">Начать игру</button>
+    <div id="leaderboard">
+      <strong>🏆 Топ 10 игроков:</strong><br>
+      <div id="topScores"></div>
+    </div>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <div id="leftButton" class="control-button"></div>
+  <div id="rightButton" class="control-button"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="game.js"></script>
+  <audio id="menuMusic" src="menu.mp3" autoplay loop></audio>
+</body>
