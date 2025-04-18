@@ -11,10 +11,8 @@ function resizeCanvas() {
   const screenAspectRatio = width / height;
 
   if (screenAspectRatio > aspectRatio) {
-    // Экран шире, чем игра: ограничиваем по высоте
     width = height * aspectRatio;
   } else {
-    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
@@ -23,11 +21,10 @@ function resizeCanvas() {
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `0px`; // Прижимаем к верху, убираем чёрную полосу
+  canvas.style.top = `0px`;
 
-  // Позиционируем кнопки под canvas
-  const canvasBottom = height; // Нижняя граница canvas в пикселях экрана
-  const buttonOffset = 10; // Отступ под canvas в пикселях
+  const canvasBottom = height;
+  const buttonOffset = 10;
   document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
   document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
 }
@@ -266,9 +263,17 @@ function draw() {
   if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
 }
 
-function loop() {
-  update();
-  draw();
+let lastUpdateTime = 0;
+const targetFrameTime = 1000 / 60; // 16.67 мс для 60 FPS
+
+function loop(timestamp) {
+  // Проверяем, прошло ли достаточно времени для нового кадра
+  if (timestamp - lastUpdateTime >= targetFrameTime) {
+    update();
+    draw();
+    lastUpdateTime = timestamp - (timestamp - lastUpdateTime) % targetFrameTime; // Выравниваем время
+  }
+
   if (!gameOver) {
     requestAnimationFrame(loop);
   } else {
