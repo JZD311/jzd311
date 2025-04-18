@@ -71,22 +71,22 @@ const maxMissedEnemies = 5;
 // Загрузка изображений с отладкой
 const version = Date.now();
 const playerImg = new Image();
-playerImg.src = `/player.png?v=${version}`;
+playerImg.src = `./player.png?v=${version}`;
 playerImg.onload = () => console.log('player.png загружен');
 playerImg.onerror = () => console.error('Ошибка загрузки player.png');
 
 const enemyImg = new Image();
-enemyImg.src = `/enemy.png?v=${version}`;
+enemyImg.src = `./enemy.png?v=${version}`;
 enemyImg.onload = () => console.log('enemy.png загружен');
 enemyImg.onerror = () => console.error('Ошибка загрузки enemy.png');
 
 const bossImg = new Image();
-bossImg.src = `/boss.png?v=${version}`;
+bossImg.src = `./boss.png?v=${version}`;
 bossImg.onload = () => console.log('boss.png загружен');
 bossImg.onerror = () => console.error('Ошибка загрузки boss.png');
 
 const bgImg = new Image();
-bgImg.src = `/background.png?v=${version}`;
+bgImg.src = `./background.png?v=${version}`;
 bgImg.onload = () => console.log('background.png загружен');
 bgImg.onerror = () => console.error('Ошибка загрузки background.png');
 
@@ -202,7 +202,7 @@ function update(deltaTime) {
       speed: Math.random() * (enemySpeedRange[1] - enemySpeedRange[0]) + enemySpeedRange[0],
     });
     enemySpawnTimer = 0;
-    console.log('Враг добавлен, enemies.length:', enemies.length); // Отладка
+    console.log('Враг добавлен, enemies.length:', enemies.length);
   }
 
   // Движение врагов
@@ -276,8 +276,15 @@ function draw() {
   // Очищаем canvas
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
+  // Отладка: выводим статус на canvas
+  ctx.fillStyle = 'white';
+  ctx.font = '16px monospace';
+  ctx.fillText(`Врагов: ${enemies.length}`, 10, 30);
+  ctx.fillText(`bgImg: ${bgImg.complete ? 'OK' : 'Ошибка'}`, 10, 50);
+  ctx.fillText(`enemyImg: ${enemyImg.complete ? 'OK' : 'Ошибка'}`, 10, 70);
+
   // Рисуем фон
-  ctx.fillStyle = '#333'; // Запасной фон
+  ctx.fillStyle = '#333';
   ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
   try {
     if (bgImg.complete && bgImg.naturalWidth) {
@@ -285,8 +292,6 @@ function draw() {
       if (bgY > 0) {
         ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
       }
-    } else {
-      console.log('bgImg не готов:', bgImg.complete, bgImg.naturalWidth);
     }
   } catch (e) {
     console.error('Ошибка отрисовки фона:', e);
@@ -326,11 +331,6 @@ function draw() {
       ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
     }
   }
-
-  // Отладка: показываем количество врагов
-  ctx.fillStyle = 'white';
-  ctx.font = '16px monospace';
-  ctx.fillText(`Врагов: ${enemies.length}`, 10, 30);
 }
 
 function loop(currentTime) {
