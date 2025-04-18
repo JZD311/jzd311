@@ -11,8 +11,10 @@ function resizeCanvas() {
   const screenAspectRatio = width / height;
 
   if (screenAspectRatio > aspectRatio) {
+    // Экран шире, чем игра: ограничиваем по высоте
     width = height * aspectRatio;
   } else {
+    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
@@ -21,10 +23,11 @@ function resizeCanvas() {
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `0px`;
+  canvas.style.top = `0px`; // Прижимаем к верху, убираем чёрную полосу
 
-  const canvasBottom = height;
-  const buttonOffset = 10;
+  // Позиционируем кнопки под canvas
+  const canvasBottom = height; // Нижняя граница canvas в пикселях экрана
+  const buttonOffset = 10; // Отступ под canvas в пикселях
   document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
   document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
 }
@@ -59,43 +62,28 @@ const enemies = [];
 let enemySpawnTimer = 0;
 
 // Настройки игры
-const playerSpeed = 4; // Пикселей/кадр при 60 FPS
+const playerSpeed = 4;
 const bulletSpeed = 7;
-const enemySpawnInterval = 30; // Кадров при 60 FPS
+const enemySpawnInterval = 30;
 const enemySpeedRange = [1, 2];
 const bossAppearScore = 1500;
 const bossHP = 5;
-const autoFireInterval = 400; // Миллисекунды
+const autoFireInterval = 400;
 const maxMissedEnemies = 5;
 
-// Загрузка изображений с отладкой
-const version = Date.now();
 const playerImg = new Image();
-playerImg.src = `./player.png?v=${version}`;
-playerImg.onload = () => console.log('player.png загружен');
-playerImg.onerror = () => console.error('Ошибка загрузки player.png');
+playerImg.src = 'player.png';
 
 const enemyImg = new Image();
-enemyImg.src = `./enemy.png?v=${version}`;
-enemyImg.onload = () => console.log('enemy.png загружен');
-enemyImg.onerror = () => console.error('Ошибка загрузки enemy.png');
+enemyImg.src = 'enemy.png';
 
 const bossImg = new Image();
-bossImg.src = `./boss.png?v=${version}`;
-bossImg.onload = () => console.log('boss.png загружен');
-bossImg.onerror = () => console.error('Ошибка загрузки boss.png');
+bossImg.src = 'boss.png';
 
 const bgImg = new Image();
-bgImg.src = `./background.png?v=${version}`;
-bgImg.onload = () => console.log('background.png загружен');
-bgImg.onerror = () => console.error('Ошибка загрузки background.png');
+bgImg.src = 'background.png';
 
 let bgY = 0;
-
-// Учёт времени для нормализации скорости
-const targetFPS = 60;
-const targetFrameTime = 1000 / targetFPS; // 16.67 мс
-let lastTime = performance.now();
 
 const player = {
   x: GAME_WIDTH / 2 - 24,
@@ -151,7 +139,6 @@ function startGame() {
   music.currentTime = 0;
   music.play();
 
-  lastTime = performance.now();
   loop();
 }
 
@@ -174,25 +161,23 @@ async function loadLeaderboard() {
   leaderboard.innerHTML = data.map((entry, i) => `${i + 1}) ${entry.nickname}: ${entry.score}`).join('<br>');
 }
 
-function update(deltaTime) {
-  const deltaScale = deltaTime / targetFrameTime;
-
+function update() {
   // Фон
-  bgY += 1 * deltaScale;
-  if (bgY >= GAME_HEIGHT) bgY -= GAME_HEIGHT;
+  bgY += 1;
+  if (bgY >= GAME_HEIGHT) bgY = 0;
   if (!gameStarted || gameOver) return;
 
   // Игрок
-  if (direction === 'left') player.x -= player.speed * deltaScale;
-  if (direction === 'right') player.x += player.speed * deltaScale;
+  if (direction === 'left') player.x -= player.speed;
+  if (direction === 'right') player.x += player.speed;
   player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
 
   // Пули
-  player.bullets = player.bullets.filter(b => b.y > -b.height);
-  player.bullets.forEach(b => b.y -= b.speed * deltaScale);
+  player.bullets = player.bullets.filter(b => b.y > 0);
+  player.bullets.forEach(b => b.y -= b.speed);
 
   // Спавн врагов
-  enemySpawnTimer += deltaScale;
+  enemySpawnTimer++;
   if (enemySpawnTimer > enemySpawnInterval) {
     enemies.push({
       x: Math.random() * (GAME_WIDTH - 40),
@@ -202,12 +187,11 @@ function update(deltaTime) {
       speed: Math.random() * (enemySpeedRange[1] - enemySpeedRange[0]) + enemySpeedRange[0],
     });
     enemySpawnTimer = 0;
-    console.log('Враг добавлен, enemies.length:', enemies.length);
   }
 
   // Движение врагов
   enemies.forEach((e, ei) => {
-    e.y += e.speed * deltaScale;
+    e.y += e.speed;
     if (e.y > GAME_HEIGHT) {
       enemies.splice(ei, 1);
       missedEnemies++;
@@ -248,7 +232,7 @@ function update(deltaTime) {
   }
 
   if (boss) {
-    boss.y += boss.speed * deltaScale;
+    boss.y += boss.speed;
     player.bullets = player.bullets.filter((bullet) => {
       if (!boss) return true;
       if (
@@ -273,73 +257,18 @@ function update(deltaTime) {
 }
 
 function draw() {
-  // Очищаем canvas
-  ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-
-  // Отладка: выводим статус на canvas
-  ctx.fillStyle = 'white';
-  ctx.font = '16px monospace';
-  ctx.fillText(`Врагов: ${enemies.length}`, 10, 30);
-  ctx.fillText(`bgImg: ${bgImg.complete ? 'OK' : 'Ошибка'}`, 10, 50);
-  ctx.fillText(`enemyImg: ${enemyImg.complete ? 'OK' : 'Ошибка'}`, 10, 70);
-
-  // Рисуем фон
-  ctx.fillStyle = '#333';
-  ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-  try {
-    if (bgImg.complete && bgImg.naturalWidth) {
-      ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
-      if (bgY > 0) {
-        ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
-      }
-    }
-  } catch (e) {
-    console.error('Ошибка отрисовки фона:', e);
-  }
-
-  // Рисуем игрока
-  try {
-    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-  } catch (e) {
-    console.error('Ошибка отрисовки игрока:', e);
-    ctx.fillStyle = 'red';
-    ctx.fillRect(player.x, player.y, player.width, player.height);
-  }
-
-  // Рисуем пули
+  ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
+  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
   ctx.fillStyle = 'lime';
   player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-
-  // Рисуем врагов
-  try {
-    enemies.forEach(e => {
-      ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height);
-    });
-  } catch (e) {
-    console.error('Ошибка отрисовки врагов:', e);
-    ctx.fillStyle = 'blue';
-    enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height));
-  }
-
-  // Рисуем босса
-  if (boss) {
-    try {
-      ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
-    } catch (e) {
-      console.error('Ошибка отрисовки босса:', e);
-      ctx.fillStyle = 'purple';
-      ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
-    }
-  }
+  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height));
+  if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
 }
 
-function loop(currentTime) {
-  const deltaTime = currentTime - lastTime;
-  lastTime = currentTime;
-
-  update(deltaTime);
+function loop() {
+  update();
   draw();
-
   if (!gameOver) {
     requestAnimationFrame(loop);
   } else {
