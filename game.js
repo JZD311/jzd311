@@ -8,11 +8,18 @@ function resizeCanvas() {
   const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
   let width = window.innerWidth;
   let height = window.innerHeight;
-  const screenAspectRatio = width / height;
+  
+  // Учитываем высоту кнопок (80px) и отступ 1px между канвасом и кнопками
+  const buttonHeight = 80; // Высота кнопок из CSS
+  const canvasOffset = 1; // Отступ в 1 пиксель
+  const availableHeight = window.innerHeight - buttonHeight - canvasOffset; // Доступная высота для канваса
+  const screenAspectRatio = width / availableHeight;
 
   if (screenAspectRatio > aspectRatio) {
-    width = height * aspectRatio;
+    // Экран шире, чем игра: ограничиваем по высоте
+    width = availableHeight * aspectRatio;
   } else {
+    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
@@ -21,15 +28,8 @@ function resizeCanvas() {
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `0px`;
-
-  const canvasBottom = height;
-  const buttonOffset = 10;
-  document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
-  document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
+  canvas.style.top = `0px`; // Прижимаем к верху
 }
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
 
 // Supabase
 const supabaseUrl = 'https://poqlvcnqbvcnyqlvxekm.supabase.co';
