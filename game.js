@@ -3,7 +3,7 @@ const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
 
-// Адаптация размера канваса под размер экрана
+// Адаптация размера канваса и позиционирование кнопок
 function resizeCanvas() {
   const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
   let width = window.innerWidth;
@@ -23,11 +23,13 @@ function resizeCanvas() {
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `${(window.innerHeight - height) / 2}px`;
-// Позиционируем кнопки под canvas
-  const canvasBottom = ((window.innerHeight - height) / 2) + height;
-  document.getElementById('leftButton').style.bottom = `${window.innerHeight - canvasBottom + 10}px`;
-  document.getElementById('rightButton').style.bottom = `${window.innerHeight - canvasBottom + 10}px`;
+  canvas.style.top = `0px`; // Прижимаем к верху, убираем чёрную полосу
+
+  // Позиционируем кнопки под canvas
+  const canvasBottom = height; // Нижняя граница canvas в пикселях экрана
+  const buttonOffset = 10; // Отступ под canvas в пикселях
+  document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
+  document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
