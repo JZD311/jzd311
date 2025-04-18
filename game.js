@@ -263,12 +263,24 @@ function update(deltaTime) {
 }
 
 function draw() {
+  // Очищаем canvas перед отрисовкой нового кадра
+  ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+  // Рисуем фон
   ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
   ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
+
+  // Рисуем игрока
   ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+
+  // Рисуем пули
   ctx.fillStyle = 'lime';
   player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+
+  // Рисуем врагов
   enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height));
+
+  // Рисуем босса
   if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
 }
 
