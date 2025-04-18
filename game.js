@@ -11,10 +11,8 @@ function resizeCanvas() {
   const screenAspectRatio = width / height;
 
   if (screenAspectRatio > aspectRatio) {
-    // Экран шире, чем игра: ограничиваем по высоте
     width = height * aspectRatio;
   } else {
-    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
@@ -23,11 +21,10 @@ function resizeCanvas() {
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = `0px`; // Прижимаем к верху, убираем чёрную полосу
+  canvas.style.top = `0px`;
 
-  // Позиционируем кнопки под canvas
-  const canvasBottom = height; // Нижняя граница canvas в пикселях экрана
-  const buttonOffset = 10; // Отступ под canvas в пикселях
+  const canvasBottom = height;
+  const buttonOffset = 10;
   document.getElementById('leftButton').style.bottom = `${buttonOffset}px`;
   document.getElementById('rightButton').style.bottom = `${buttonOffset}px`;
 }
@@ -62,13 +59,13 @@ const enemies = [];
 let enemySpawnTimer = 0;
 
 // Настройки игры
-const playerSpeed = 4;
+const playerSpeed = 4; // Пикселей/кадр при 60 FPS
 const bulletSpeed = 7;
-const enemySpawnInterval = 30;
+const enemySpawnInterval = 30; // Кадров при 60 FPS
 const enemySpeedRange = [1, 2];
 const bossAppearScore = 1500;
 const bossHP = 5;
-const autoFireInterval = 400;
+const autoFireInterval = 400; // Миллисекунды (не зависит от FPS)
 const maxMissedEnemies = 5;
 
 const playerImg = new Image();
@@ -84,6 +81,11 @@ const bgImg = new Image();
 bgImg.src = 'background.png';
 
 let bgY = 0;
+
+// Учёт времени для нормализации скорости
+const targetFPS = 60;
+const targetFrameTime = 1000 / targetFPS; // 16.67 мс при 60 FPS
+let lastTime = performance.now();
 
 const player = {
   x: GAME_WIDTH / 2 - 24,
@@ -139,155 +141,4 @@ function startGame() {
   music.currentTime = 0;
   music.play();
 
-  loop();
-}
-
-async function saveScore(name, score) {
-  const { error } = await client.from('scores').insert([{ nickname: name, score }]);
-  if (error) console.error('Ошибка сохранения:', error);
-}
-
-async function loadLeaderboard() {
-  const { data, error } = await client
-    .from('scores')
-    .select('*')
-    .order('score', { ascending: false })
-    .limit(10);
-  if (error) {
-    console.error('Ошибка загрузки топа:', error);
-    return;
-  }
-  const leaderboard = document.getElementById('topScores');
-  leaderboard.innerHTML = data.map((entry, i) => `${i + 1}) ${entry.nickname}: ${entry.score}`).join('<br>');
-}
-
-function update() {
-  // Фон
-  bgY += 1;
-  if (bgY >= GAME_HEIGHT) bgY = 0;
-  if (!gameStarted || gameOver) return;
-
-  // Игрок
-  if (direction === 'left') player.x -= player.speed;
-  if (direction === 'right') player.x += player.speed;
-  player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
-
-  // Пули
-  player.bullets = player.bullets.filter(b => b.y > 0);
-  player.bullets.forEach(b => b.y -= b.speed);
-
-  // Спавн врагов
-  enemySpawnTimer++;
-  if (enemySpawnTimer > enemySpawnInterval) {
-    enemies.push({
-      x: Math.random() * (GAME_WIDTH - 40),
-      y: -40,
-      width: 40,
-      height: 40,
-      speed: Math.random() * (enemySpeedRange[1] - enemySpeedRange[0]) + enemySpeedRange[0],
-    });
-    enemySpawnTimer = 0;
-  }
-
-  // Движение врагов
-  enemies.forEach((e, ei) => {
-    e.y += e.speed;
-    if (e.y > GAME_HEIGHT) {
-      enemies.splice(ei, 1);
-      missedEnemies++;
-      if (missedEnemies >= maxMissedEnemies) {
-        gameOver = true;
-      }
-    }
-  });
-
-  // Столкновения врагов с пулями
-  enemies.forEach((enemy, ei) => {
-    player.bullets.forEach((bullet, bi) => {
-      if (
-        bullet.x < enemy.x + enemy.width &&
-        bullet.x + bullet.width > enemy.x &&
-        bullet.y < enemy.y + enemy.height &&
-        bullet.y + bullet.height > enemy.y
-      ) {
-        enemies.splice(ei, 1);
-        player.bullets.splice(bi, 1);
-        score += 100;
-      }
-    });
-  });
-
-  // Босс
-  if (score >= bossAppearScore && !bossSpawned) {
-    boss = {
-      x: GAME_WIDTH / 2 - 64,
-      y: -128,
-      width: 128,
-      height: 128,
-      speed: 1,
-      hp: bossHP
-    };
-    bossSpawned = true;
-    bossAppearSound.play();
-  }
-
-  if (boss) {
-    boss.y += boss.speed;
-    player.bullets = player.bullets.filter((bullet) => {
-      if (!boss) return true;
-      if (
-        bullet.x < boss.x + boss.width &&
-        bullet.x + bullet.width > boss.x &&
-        bullet.y < boss.y + boss.height &&
-        bullet.y + bullet.height > boss.y
-      ) {
-        boss.hp -= 1;
-        if (boss.hp <= 0) {
-          score += 1000;
-          boss = null;
-          bossDeathSound.play();
-        }
-        return false;
-      }
-      return true;
-    });
-  }
-
-  document.getElementById('score').textContent = `Счёт: ${score} | Пропущено: ${missedEnemies} / ${maxMissedEnemies}`;
-}
-
-function draw() {
-  ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
-  ctx.fillStyle = 'lime';
-  player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height));
-  if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
-}
-
-function loop() {
-  update();
-  draw();
-  if (!gameOver) {
-    requestAnimationFrame(loop);
-  } else {
-    music.pause();
-    if (menuMusic) menuMusic.play();
-    saveScore(nickname, score);
-    loadLeaderboard();
-    document.getElementById('startText').innerText = 'Ты проиграл! Попробуешь ещё раз?';
-    document.getElementById('startScreen').style.display = 'flex';
-    gameStarted = false;
-  }
-}
-
-loadLeaderboard();
-window.startGame = startGame;
-
-// Убираем двойной тап на кнопках управления
-document.querySelectorAll('.control-button').forEach(btn => {
-  btn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
-  btn.addEventListener('touchend', e => e.preventDefault(), { passive: false });
-  btn.addEventListener('dblclick', e => e.preventDefault());
-});
+  lastTime = performance.now(); // Сбрасываем время для нового
