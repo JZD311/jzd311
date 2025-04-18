@@ -3,15 +3,18 @@ const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
 
-// Настройка размеров канваса
+// Адаптация размера канваса под размер экрана
 function resizeCanvas() {
   const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
   let width = window.innerWidth;
   let height = window.innerHeight;
+  const screenAspectRatio = width / height;
 
-  if (width / height > aspectRatio) {
+  if (screenAspectRatio > aspectRatio) {
+    // Экран шире, чем игра: ограничиваем по высоте
     width = height * aspectRatio;
   } else {
+    // Экран выше, чем игра: ограничиваем по ширине
     height = width / aspectRatio;
   }
 
@@ -19,9 +22,8 @@ function resizeCanvas() {
   canvas.height = GAME_HEIGHT;
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
-  canvas.style.position = 'absolute';
   canvas.style.left = `${(window.innerWidth - width) / 2}px`;
-  canvas.style.top = '0';
+  canvas.style.top = `${(window.innerHeight - height) / 2}px`;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
@@ -54,10 +56,10 @@ const enemies = [];
 let enemySpawnTimer = 0;
 
 // Настройки игры
-const playerSpeed = 240; // Скорость в пикселях в секунду (было 4, умножили на 60 для 60 FPS)
-const bulletSpeed = 420; // Скорость в пикселях в секунду (было 7)
-const enemySpawnInterval = 1800; // В миллисекундах (30 кадров при 60 FPS)
-const enemySpeedRange = [60, 120]; // Скорость в пикселях в секунду (было [1, 2])
+const playerSpeed = 4;
+const bulletSpeed = 7;
+const enemySpawnInterval = 30;
+const enemySpeedRange = [1, 2];
 const bossAppearScore = 1500;
 const bossHP = 5;
 const autoFireInterval = 400;
@@ -126,13 +128,12 @@ function startGame() {
   bossSpawned = false;
   enemies.length = 0;
   player.bullets.length = 0;
-  lastTime = 0; // Сбрасываем для нового цикла
 
   if (menuMusic) menuMusic.pause();
   music.currentTime = 0;
   music.play();
 
-  requestAnimationFrame(loop);
+  loop();
 }
 
 async function saveScore(name, score) {
@@ -154,29 +155,23 @@ async function loadLeaderboard() {
   leaderboard.innerHTML = data.map((entry, i) => `${i + 1}) ${entry.nickname}: ${entry.score}`).join('<br>');
 }
 
-// Временные переменные для цикла
-const TARGET_FPS = 60;
-const FRAME_TIME = 1000 / TARGET_FPS;
-let lastTime = 0;
-let accumulatedTime = 0;
-
-function update(deltaTime) {
+function update() {
   // Фон
-  bgY += 1 * deltaTime * 60; // Скорость фона в пикселях в секунду
+  bgY += 1;
   if (bgY >= GAME_HEIGHT) bgY = 0;
   if (!gameStarted || gameOver) return;
 
   // Игрок
-  if (direction === 'left') player.x -= player.speed * deltaTime;
-  if (direction === 'right') player.x += player.speed * deltaTime;
+  if (direction === 'left') player.x -= player.speed;
+  if (direction === 'right') player.x += player.speed;
   player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
 
   // Пули
   player.bullets = player.bullets.filter(b => b.y > 0);
-  player.bullets.forEach(b => b.y -= b.speed * deltaTime);
+  player.bullets.forEach(b => b.y -= b.speed);
 
   // Спавн врагов
-  enemySpawnTimer += deltaTime * 1000; // В миллисекундах
+  enemySpawnTimer++;
   if (enemySpawnTimer > enemySpawnInterval) {
     enemies.push({
       x: Math.random() * (GAME_WIDTH - 40),
@@ -190,7 +185,7 @@ function update(deltaTime) {
 
   // Движение врагов
   enemies.forEach((e, ei) => {
-    e.y += e.speed * deltaTime;
+    e.y += e.speed;
     if (e.y > GAME_HEIGHT) {
       enemies.splice(ei, 1);
       missedEnemies++;
@@ -223,7 +218,7 @@ function update(deltaTime) {
       y: -128,
       width: 128,
       height: 128,
-      speed: 60, // Скорость в пикселях в секунду (было 1)
+      speed: 1,
       hp: bossHP
     };
     bossSpawned = true;
@@ -231,7 +226,7 @@ function update(deltaTime) {
   }
 
   if (boss) {
-    boss.y += boss.speed * deltaTime;
+    boss.y += boss.speed;
     player.bullets = player.bullets.filter((bullet) => {
       if (!boss) return true;
       if (
@@ -261,25 +256,13 @@ function draw() {
   ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
   ctx.fillStyle = 'lime';
   player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, height));
+  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height));
   if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
 }
 
-function loop(timestamp) {
-  if (!lastTime) lastTime = timestamp;
-  const deltaTime = (timestamp - lastTime) / 1000; // Время в секундах
-  lastTime = timestamp;
-
-  accumulatedTime += deltaTime * 1000; // Накапливаем в миллисекундах
-
-  // Обновляем с фиксированным шагом
-  while (accumulatedTime >= FRAME_TIME) {
-    update(FRAME_TIME / 1000); // Фиксированный deltaTime
-    accumulatedTime -= FRAME_TIME;
-  }
-
+function loop() {
+  update();
   draw();
-
   if (!gameOver) {
     requestAnimationFrame(loop);
   } else {
