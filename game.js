@@ -68,6 +68,7 @@ const bossHP = 5;
 const autoFireInterval = 400; // Миллисекунды (не зависит от FPS)
 const maxMissedEnemies = 5;
 
+// Загрузка изображений с проверкой
 const playerImg = new Image();
 playerImg.src = 'player.png';
 
@@ -79,6 +80,21 @@ bossImg.src = 'boss.png';
 
 const bgImg = new Image();
 bgImg.src = 'background.png';
+
+// Ждём загрузки фона перед началом игры
+let imagesLoaded = false;
+const imagesToLoad = [bgImg, playerImg, enemyImg, bossImg];
+let loadedCount = 0;
+
+imagesToLoad.forEach(img => {
+  img.onload = () => {
+    loadedCount++;
+    if (loadedCount === imagesToLoad.length) {
+      imagesLoaded = true;
+    }
+  };
+  img.onerror = () => console.error(`Ошибка загрузки изображения: ${img.src}`);
+});
 
 let bgY = 0;
 
@@ -127,6 +143,11 @@ function startGame() {
     localStorage.setItem('nickname', nickname);
   }
 
+  if (!imagesLoaded) {
+    alert('Пожалуйста, подождите, пока загрузятся все изображения.');
+    return;
+  }
+
   document.getElementById('startScreen').style.display = 'none';
   gameOver = false;
   gameStarted = true;
@@ -141,7 +162,7 @@ function startGame() {
   music.currentTime = 0;
   music.play();
 
-  lastTime = performance.now(); // Сбрасываем время для нового цикла
+  lastTime = performance.now();
   loop();
 }
 
@@ -165,12 +186,11 @@ async function loadLeaderboard() {
 }
 
 function update(deltaTime) {
-  // Масштабируем все скорости и таймеры с учётом deltaTime
   const deltaScale = deltaTime / targetFrameTime; // Нормализуем к 60 FPS
 
   // Фон
   bgY += 1 * deltaScale;
-  if (bgY >= GAME_HEIGHT) bgY = 0;
+  if (bgY >= GAME_HEIGHT) bgY -= GAME_HEIGHT; // Более точный цикл
   if (!gameStarted || gameOver) return;
 
   // Игрок
@@ -179,7 +199,7 @@ function update(deltaTime) {
   player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
 
   // Пули
-  player.bullets = player.bullets.filter(b => b.y > 0);
+  player.bullets = player.bullets.filter(b => b.y > -b.height);
   player.bullets.forEach(b => b.y -= b.speed * deltaScale);
 
   // Спавн врагов
@@ -263,29 +283,45 @@ function update(deltaTime) {
 }
 
 function draw() {
-  // Очищаем canvas перед отрисовкой нового кадра
+  // Очищаем canvas
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
   // Рисуем фон
-  ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
-  ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
+  if (bgImg.complete && bgImg.naturalWidth) {
+    ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
+    if (bgY > 0) {
+      ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
+    }
+  } else {
+    // Запасной фон, если bgImg не загружен
+    ctx.fillStyle = '#333';
+    ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+  }
 
   // Рисуем игрока
-  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+  if (playerImg.complete && playerImg.naturalWidth) {
+    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+  }
 
   // Рисуем пули
   ctx.fillStyle = 'lime';
   player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
   // Рисуем врагов
-  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height));
+  enemies.forEach(e => {
+    if (enemyImg.complete && enemyImg.naturalWidth) {
+      ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height);
+    }
+  });
 
   // Рисуем босса
-  if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
+  if (boss && bossImg.complete && bossImg.naturalWidth) {
+    ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
+  }
 }
 
 function loop(currentTime) {
-  const deltaTime = currentTime - lastTime; // Время между кадрами в мс
+  const deltaTime = currentTime - lastTime;
   lastTime = currentTime;
 
   update(deltaTime);
