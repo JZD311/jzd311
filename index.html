@@ -82,30 +82,30 @@
       touch-action: manipulation;
     }
     .control-button {
-      position: absolute;
-      bottom: 10px; /* Временное значение, будет переопределено в JS */
-      width: 45%;
-      height: 80px;
-      z-index: 30;
-      touch-action: manipulation;
-      transition: opacity 0.1s ease;
-      background-size: contain;
-      background-repeat: no-repeat;
-      background-position: center;
-      background-color: #ff6f61;
-      border-radius: 20px;
-    }
-    .control-button:active {
-      opacity: 0.8;
-    }
-    #leftButton {
-      left: 0;
-      background-image: url('leftArrow.png');
-    }
-    #rightButton {
-      right: 0;
-      background-image: url('rightArrow.png');
-    }
+  position: absolute;
+  bottom: 0px; /* Привязываем к нижнему краю экрана */
+  width: 45%;
+  height: 80px;
+  z-index: 30;
+  touch-action: manipulation;
+  transition: opacity 0.1s ease;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #ff6f61;
+  border-radius: 20px;
+}
+.control-button:active {
+  opacity: 0.8;
+}
+#leftButton {
+  left: 0;
+  background-image: url('leftArrow.png');
+}
+#rightButton {
+  right: 0;
+  background-image: url('rightArrow.png');
+}
   </style>
 </head>
 <body>
