@@ -3,20 +3,32 @@ const ctx = canvas.getContext('2d');
 const GAME_WIDTH = 480;
 const GAME_HEIGHT = 640;
 
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
-
+// Настройка размеров канваса
 function resizeCanvas() {
-  const scale = Math.min(window.innerWidth / GAME_WIDTH, window.innerHeight / GAME_HEIGHT);
-  canvas.style.transform = `scale(${scale})`;
-  canvas.style.transformOrigin = 'top left';
+  const aspectRatio = GAME_WIDTH / GAME_HEIGHT;
+  let width = window.innerWidth;
+  let height = window.innerHeight;
+
+  if (width / height > aspectRatio) {
+    width = height * aspectRatio;
+  } else {
+    height = width / aspectRatio;
+  }
+
+  canvas.width = GAME_WIDTH;
+  canvas.height = GAME_HEIGHT;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  canvas.style.position = 'absolute';
+  canvas.style.left = `${(window.innerWidth - width) / 2}px`;
+  canvas.style.top = '0';
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 
 // Supabase
 const supabaseUrl = 'https://poqlvcnqbvcnyqlvxekm.supabase.co';
-const supabaseKey= 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcWx2Y25xYnZjbnlxbHZ4ZWttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3ODkwMDYsImV4cCI6MjA2MDM2NTAwNn0.pBPMAQia8jzNT-e-dAT0hJ_t_QrHZUdSMU6JDdcA1JE'; // ВСТАВЬ ПОЛНЫЙ КЛЮЧ
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcWx2Y25xYnZjbnlxbHZ4ZWttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ3ODkwMDYsImV4cCI6MjA2MDM2NTAwNn0.pBPMAQia8jzNT-e-dAT0hJ_t_QrHZUdSMU6JDdcA1JE';
 const client = supabase.createClient(supabaseUrl, supabaseKey);
 
 // Звуки
@@ -42,10 +54,10 @@ const enemies = [];
 let enemySpawnTimer = 0;
 
 // Настройки игры
-const playerSpeed = 4;
-const bulletSpeed = 7;
-const enemySpawnInterval = 30;
-const enemySpeedRange = [1, 2]; // медленнее
+const playerSpeed = 240; // Скорость в пикселях в секунду (было 4, умножили на 60 для 60 FPS)
+const bulletSpeed = 420; // Скорость в пикселях в секунду (было 7)
+const enemySpawnInterval = 1800; // В миллисекундах (30 кадров при 60 FPS)
+const enemySpeedRange = [60, 120]; // Скорость в пикселях в секунду (было [1, 2])
 const bossAppearScore = 1500;
 const bossHP = 5;
 const autoFireInterval = 400;
@@ -90,7 +102,7 @@ function playerShoot() {
   player.bullets.push({
     x: player.x + player.width / 2 - 3,
     y: player.y,
-    width: 6, // пуля увеличена
+    width: 6,
     height: 12,
     speed: bulletSpeed,
   });
@@ -114,12 +126,13 @@ function startGame() {
   bossSpawned = false;
   enemies.length = 0;
   player.bullets.length = 0;
+  lastTime = 0; // Сбрасываем для нового цикла
 
   if (menuMusic) menuMusic.pause();
   music.currentTime = 0;
   music.play();
 
-  loop();
+  requestAnimationFrame(loop);
 }
 
 async function saveScore(name, score) {
@@ -141,19 +154,30 @@ async function loadLeaderboard() {
   leaderboard.innerHTML = data.map((entry, i) => `${i + 1}) ${entry.nickname}: ${entry.score}`).join('<br>');
 }
 
-function update() {
-  bgY += 1;
+// Временные переменные для цикла
+const TARGET_FPS = 60;
+const FRAME_TIME = 1000 / TARGET_FPS;
+let lastTime = 0;
+let accumulatedTime = 0;
+
+function update(deltaTime) {
+  // Фон
+  bgY += 1 * deltaTime * 60; // Скорость фона в пикселях в секунду
   if (bgY >= GAME_HEIGHT) bgY = 0;
   if (!gameStarted || gameOver) return;
 
-  if (direction === 'left') player.x -= player.speed;
-  if (direction === 'right') player.x += player.speed;
+  // Игрок
+  if (direction === 'left') player.x -= player.speed * deltaTime;
+  if (direction === 'right') player.x += player.speed * deltaTime;
   player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
 
+  // Пули
   player.bullets = player.bullets.filter(b => b.y > 0);
-  player.bullets.forEach(b => b.y -= b.speed);
+  player.bullets.forEach(b => b.y -= b.speed * deltaTime);
 
-  if (++enemySpawnTimer > enemySpawnInterval) {
+  // Спавн врагов
+  enemySpawnTimer += deltaTime * 1000; // В миллисекундах
+  if (enemySpawnTimer > enemySpawnInterval) {
     enemies.push({
       x: Math.random() * (GAME_WIDTH - 40),
       y: -40,
@@ -164,8 +188,9 @@ function update() {
     enemySpawnTimer = 0;
   }
 
+  // Движение врагов
   enemies.forEach((e, ei) => {
-    e.y += e.speed;
+    e.y += e.speed * deltaTime;
     if (e.y > GAME_HEIGHT) {
       enemies.splice(ei, 1);
       missedEnemies++;
@@ -175,6 +200,7 @@ function update() {
     }
   });
 
+  // Столкновения врагов с пулями
   enemies.forEach((enemy, ei) => {
     player.bullets.forEach((bullet, bi) => {
       if (
@@ -190,13 +216,14 @@ function update() {
     });
   });
 
+  // Босс
   if (score >= bossAppearScore && !bossSpawned) {
     boss = {
       x: GAME_WIDTH / 2 - 64,
       y: -128,
       width: 128,
       height: 128,
-      speed: 1,
+      speed: 60, // Скорость в пикселях в секунду (было 1)
       hp: bossHP
     };
     bossSpawned = true;
@@ -204,7 +231,7 @@ function update() {
   }
 
   if (boss) {
-    boss.y += boss.speed;
+    boss.y += boss.speed * deltaTime;
     player.bullets = player.bullets.filter((bullet) => {
       if (!boss) return true;
       if (
@@ -234,13 +261,25 @@ function draw() {
   ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
   ctx.fillStyle = 'lime';
   player.bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
-  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height));
+  enemies.forEach(e => ctx.drawImage(enemyImg, e.x, e.y, e.width, height));
   if (boss) ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
 }
 
-function loop() {
-  update();
+function loop(timestamp) {
+  if (!lastTime) lastTime = timestamp;
+  const deltaTime = (timestamp - lastTime) / 1000; // Время в секундах
+  lastTime = timestamp;
+
+  accumulatedTime += deltaTime * 1000; // Накапливаем в миллисекундах
+
+  // Обновляем с фиксированным шагом
+  while (accumulatedTime >= FRAME_TIME) {
+    update(FRAME_TIME / 1000); // Фиксированный deltaTime
+    accumulatedTime -= FRAME_TIME;
+  }
+
   draw();
+
   if (!gameOver) {
     requestAnimationFrame(loop);
   } else {
@@ -256,15 +295,10 @@ function loop() {
 
 loadLeaderboard();
 window.startGame = startGame;
+
 // Убираем двойной тап на кнопках управления
 document.querySelectorAll('.control-button').forEach(btn => {
-  btn.addEventListener('touchstart', e => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, { passive: false });
-  btn.addEventListener('touchend', e => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, { passive: false });
+  btn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  btn.addEventListener('touchend', e => e.preventDefault(), { passive: false });
   btn.addEventListener('dblclick', e => e.preventDefault());
 });
