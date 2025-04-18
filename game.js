@@ -9,15 +9,21 @@ function resizeCanvas() {
   let width = window.innerWidth;
   let height = window.innerHeight;
 
+  // Используем visualViewport, если доступно (для мобильных устройств)
+  if (window.visualViewport) {
+    height = window.visualViewport.height;
+    width = window.visualViewport.width;
+  }
+
   // Учитываем высоту кнопок (80px) и отступ 1px
   const buttonHeight = 80; // Высота кнопок из CSS
   const canvasOffset = 1; // Отступ в 1 пиксель
 
   // Рассчитываем доступную высоту с учётом кнопок и отступа
-  let availableHeight = window.innerHeight - buttonHeight - canvasOffset;
+  let availableHeight = height - buttonHeight - canvasOffset;
 
   // Проверяем, чтобы availableHeight не был меньше минимального значения
-  const minHeight = GAME_HEIGHT / 2; // Минимальная высота канваса (для предотвращения сжатия)
+  const minHeight = GAME_HEIGHT / 2; // Минимальная высота канваса
   availableHeight = Math.max(availableHeight, minHeight);
 
   const screenAspectRatio = width / availableHeight;
@@ -40,7 +46,7 @@ function resizeCanvas() {
   canvas.style.top = `0px`; // Прижимаем к верху
 
   // Для отладки: выводим значения
-  console.log('window.innerHeight:', window.innerHeight, 'availableHeight:', availableHeight, 'canvas width:', width, 'canvas height:', height);
+  console.log('window.innerHeight:', window.innerHeight, 'visualViewport.height:', window.visualViewport?.height, 'availableHeight:', availableHeight, 'canvas width:', width, 'canvas height:', height);
 }
 
 // Supabase
