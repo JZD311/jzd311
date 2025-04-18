@@ -65,36 +65,30 @@ const enemySpawnInterval = 30; // Кадров при 60 FPS
 const enemySpeedRange = [1, 2];
 const bossAppearScore = 1500;
 const bossHP = 5;
-const autoFireInterval = 400; // Миллисекунды (не зависит от FPS)
+const autoFireInterval = 400; // Миллисекунды
 const maxMissedEnemies = 5;
 
-// Загрузка изображений с проверкой
+// Загрузка изображений с отладкой
+const version = Date.now(); // Для обхода кэша
 const playerImg = new Image();
-playerImg.src = 'player.png';
+playerImg.src = `player.png?v=${version}`;
+playerImg.onload = () => console.log('player.png загружен');
+playerImg.onerror = () => console.error('Ошибка загрузки player.png');
 
 const enemyImg = new Image();
-enemyImg.src = 'enemy.png';
+enemyImg.src = `enemy.png?v=${version}`;
+enemyImg.onload = () => console.log('enemy.png загружен');
+enemyImg.onerror = () => console.error('Ошибка загрузки enemy.png');
 
 const bossImg = new Image();
-bossImg.src = 'boss.png';
+bossImg.src = `boss.png?v=${version}`;
+bossImg.onload = () => console.log('boss.png загружен');
+bossImg.onerror = () => console.error('Ошибка загрузки boss.png');
 
 const bgImg = new Image();
-bgImg.src = 'background.png';
-
-// Ждём загрузки фона перед началом игры
-let imagesLoaded = false;
-const imagesToLoad = [bgImg, playerImg, enemyImg, bossImg];
-let loadedCount = 0;
-
-imagesToLoad.forEach(img => {
-  img.onload = () => {
-    loadedCount++;
-    if (loadedCount === imagesToLoad.length) {
-      imagesLoaded = true;
-    }
-  };
-  img.onerror = () => console.error(`Ошибка загрузки изображения: ${img.src}`);
-});
+bgImg.src = `background.png?v=${version}`;
+bgImg.onload = () => console.log('background.png загружен');
+bgImg.onerror = () => console.error('Ошибка загрузки background.png');
 
 let bgY = 0;
 
@@ -143,11 +137,6 @@ function startGame() {
     localStorage.setItem('nickname', nickname);
   }
 
-  if (!imagesLoaded) {
-    alert('Пожалуйста, подождите, пока загрузятся все изображения.');
-    return;
-  }
-
   document.getElementById('startScreen').style.display = 'none';
   gameOver = false;
   gameStarted = true;
@@ -186,11 +175,11 @@ async function loadLeaderboard() {
 }
 
 function update(deltaTime) {
-  const deltaScale = deltaTime / targetFrameTime; // Нормализуем к 60 FPS
+  const deltaScale = deltaTime / targetFrameTime;
 
   // Фон
   bgY += 1 * deltaScale;
-  if (bgY >= GAME_HEIGHT) bgY -= GAME_HEIGHT; // Более точный цикл
+  if (bgY >= GAME_HEIGHT) bgY -= GAME_HEIGHT;
   if (!gameStarted || gameOver) return;
 
   // Игрок
@@ -287,20 +276,26 @@ function draw() {
   ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
   // Рисуем фон
-  if (bgImg.complete && bgImg.naturalWidth) {
+  try {
     ctx.drawImage(bgImg, 0, bgY, GAME_WIDTH, GAME_HEIGHT);
     if (bgY > 0) {
       ctx.drawImage(bgImg, 0, bgY - GAME_HEIGHT, GAME_WIDTH, GAME_HEIGHT);
     }
-  } else {
-    // Запасной фон, если bgImg не загружен
+  } catch (e) {
+    console.error('Ошибка отрисовки фона:', e);
+    // Запасной фон
     ctx.fillStyle = '#333';
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
   }
 
   // Рисуем игрока
-  if (playerImg.complete && playerImg.naturalWidth) {
+  try {
     ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+  } catch (e) {
+    console.error('Ошибка отрисовки игрока:', e);
+    // Запасной спрайт игрока
+    ctx.fillStyle = 'red';
+    ctx.fillRect(player.x, player.y, player.width, player.height);
   }
 
   // Рисуем пули
@@ -309,14 +304,25 @@ function draw() {
 
   // Рисуем врагов
   enemies.forEach(e => {
-    if (enemyImg.complete && enemyImg.naturalWidth) {
+    try {
       ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height);
+    } catch (e) {
+      console.error('Ошибка отрисовки врага:', e);
+      // Запасной спрайт врага
+      ctx.fillStyle = 'blue';
+      ctx.fillRect(e.x, e.y, e.width, e.height);
     }
   });
 
   // Рисуем босса
-  if (boss && bossImg.complete && bossImg.naturalWidth) {
-    ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
+  if (boss) {
+    try {
+      ctx.drawImage(bossImg, boss.x, boss.y, boss.width, boss.height);
+    } catch (e) {
+      console.error('Ошибка отрисовки босса:', e);
+      ctx.fillStyle = 'purple';
+      ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+    }
   }
 }
 
